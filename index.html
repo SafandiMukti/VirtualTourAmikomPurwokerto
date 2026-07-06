@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Tour Gedung 1 — Universitas Amikom Purwokerto</title>
+<meta name="description" content="Website publikasi Virtual Tour Gedung 1 Universitas Amikom Purwokerto. Jelajahi tata letak ruang interaktif 3D berbasis game engine Unity dan Blender.">
+
+<!-- Tailwind via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0B0713',
+          surface: '#150E24',
+          surface2: '#0E091A',
+          primary: '#6D28D9',
+          accent: '#A855F7',
+          ink: '#F5F2FA',
+          muted: '#9E94B8',
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  html { scroll-behavior: smooth; }
+  ::selection { background: #A855F7; color: #0B0713; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #0B0713; }
+  ::-webkit-scrollbar-thumb { background: #150E24; border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #A855F7; }
+
+  .waypoint-mark {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+    clip-path: polygon(50% 0%, 100% 60%, 68% 60%, 68% 100%, 32% 100%, 32% 60%, 0% 60%);
+    background: linear-gradient(180deg, #A855F7, #6D28D9);
+  }
+
+  .blueprint-bg {
+    position: relative;
+    background-image:
+      linear-gradient(rgba(168, 85, 247, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(168, 85, 247, 0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+  .blueprint-bg::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle 50vw at 50% 10%, rgba(109, 40, 217, 0.12), transparent 80%);
+    pointer-events: none;
+  }
+
+  .section-label { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #A855F7; }
+  .section-label::before { content: ""; width: 16px; height: 2px; background: linear-gradient(90deg, #A855F7, transparent); display: inline-block; }
+
+  .hero-visual { perspective: 1000px; }
+  .hero-stage { transform-style: preserve-3d; transition: transform 0.1s ease-out; }
+  .hero-ring { position: absolute; border-radius: 9999px; border: 1px dashed rgba(168, 85, 247, 0.2); pointer-events: none; }
+  .hero-ring--outer { width: 95%; height: 95%; animation: spin 50s linear infinite; }
+  .hero-ring--inner { width: 70%; height: 70%; border-color: rgba(109, 40, 217, 0.15); animation: spin 30s linear infinite reverse; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .hero-glow { position: absolute; bottom: 8%; width: 60%; height: 15%; background: radial-gradient(ellipse, rgba(168, 85, 247, 0.35), transparent 70%); filter: blur(8px); }
+
+  .hero-tag { position: absolute; display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #F5F2FA; background: rgba(11, 7, 19, 0.75); backdrop-filter: blur(12px); padding: 0.5rem 0.85rem; border-radius: 999px; }
+  .hero-tag--top { top: 10%; left: 4%; }
+  .hero-tag--bottom { bottom: 5%; right: 4%; }
+
+  .benefit-card, .feature-card, .gallery-item, .spec-table, .download-card { background: #150E24; border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 16px; padding: 1.5rem; }
+  .feature-card { transition: all 0.3s ease; }
+  .feature-card:hover { border-color: rgba(168, 85, 247, 0.3); transform: translateY(-4px); box-shadow: 0 12px 30px -10px rgba(109, 40, 217, 0.4); }
+  .feature-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(168, 85, 247, 0.08); color: #A855F7; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(168, 85, 247, 0.1); }
+  .key-chip { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0.15rem 0.45rem; color: #F5F2FA; }
+  .tag-pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #A855F7; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.1); border-radius: 999px; padding: 0.25rem 0.7rem; }
+
+  .gallery-item { padding: 0; overflow: hidden; position: relative; }
+  .gallery-overlay { position: absolute; inset: 0; background: linear-gradient(to top, #0B0713 8%, transparent 70%); display: flex; align-items: flex-end; padding: 1.25rem; opacity: 0; transition: opacity 0.3s ease; }
+  .gallery-item:hover .gallery-overlay { opacity: 1; }
+  .gallery-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #9E94B8; background: #150E24; border: 1px dashed rgba(168, 85, 247, 0.2); }
+
+  .spec-row { display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+  .spec-row:last-child { border-bottom: none; }
+  .dev-row { display: flex; flex-direction: column; gap: 0.1rem; border-left: 2px solid #A855F7; padding-left: 0.75rem; }
+
+  /* ================= AKORDION FAQ FIX (HIDE BY DEFAULT) ================= */
+  .faq-item { background: #150E24; border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 12px; overflow: hidden; transition: all 0.3s ease; }
+  .faq-item.open { border-color: rgba(168, 85, 247, 0.3); box-shadow: 0 10px 30px -15px rgba(109, 40, 217, 0.4); }
+  .faq-question { width: 100%; display: flex; align-items: center; gap: 1rem; padding: 1.25rem; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.95rem; color: #F5F2FA; background: transparent; border: none; cursor: pointer; }
+  .faq-q-num { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: #A855F7; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.15); border-radius: 6px; padding: 0.2rem 0.45rem; }
+  .faq-icon { position: relative; width: 16px; height: 16px; margin-left: auto; flex-shrink: 0; }
+  .faq-icon span { position: absolute; top: 50%; left: 50%; background: #A855F7; transform: translate(-50%, -50%); transition: transform 0.3s ease, opacity 0.3s ease; }
+  .faq-icon span:first-child { width: 12px; height: 2px; }
+  .faq-icon span:last-child { width: 2px; height: 12px; }
+  .faq-item.open .faq-icon span:last-child { transform: translate(-50%, -50%) rotate(90deg); opacity: 0; }
+
+  /* Element Pengunci Sembunyi Total Jawaban Awal */
+  .faq-answer-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-out;
+  }
+  .faq-item.open .faq-answer-wrap { grid-template-rows: 1fr; }
+  .faq-answer { overflow: hidden; }
+  .faq-answer p { color: #9E94B8; font-size: 0.88rem; line-height: 1.6; padding: 0 1.25rem 1.25rem 3.4rem; }
+
+  .contact-card { display: flex; align-items: center; gap: 1rem; background: #150E24; border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 16px; padding: 1.25rem; transition: all 0.25s ease; }
+  .contact-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -12px rgba(109, 40, 217, 0.5); }
+  .contact-card--wa:hover { border-color: rgba(37, 211, 102, 0.4); }
+  .contact-card--ig:hover { border-color: rgba(168, 85, 247, 0.4); }
+  .contact-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .contact-card--wa .contact-icon { background: rgba(37, 211, 102, 0.08); color: #25D366; }
+  .contact-card--ig .contact-icon { background: rgba(168, 85, 247, 0.08); color: #A855F7; }
+  .contact-arrow { margin-left: auto; color: #4E4666; transition: transform 0.25s ease; }
+  .contact-card:hover .contact-arrow { transform: translateX(3px); color: #F5F2FA; }
+
+  .nav-link { position: relative; }
+  .nav-link::after { content: ""; position: absolute; bottom: -4px; left: 0; width: 0; height: 1.5px; background: #A855F7; transition: width 0.25s ease; }
+  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+  .nav-link.active { color: #A855F7; }
+
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body class="bg-bg text-ink font-body antialiased">
+
+<!-- ============ NAVBAR ============ -->
+<header id="navbar" class="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-bg/70 backdrop-blur-xl transition-all duration-300">
+  <nav class="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+    <a href="#hero" class="flex items-center gap-2 font-display font-bold text-lg tracking-tight">
+      <span class="waypoint-mark inline-block"></span>
+      Amikom Purwokerto<span class="text-accent">3D</span>.Tour
+    </a>
+    <ul class="hidden md:flex items-center gap-6 text-xs text-muted font-mono uppercase tracking-wider">
+      <li><a href="#tentang" class="nav-link py-2">Tentang</a></li>
+      <li><a href="#fitur" class="nav-link py-2">Fitur</a></li>
+      <li><a href="#galeri" class="nav-link py-2">Galeri</a></li>
+      <li><a href="#demo" class="nav-link py-2">Demo Video</a></li>
+      <li><a href="#spesifikasi" class="nav-link py-2">Spesifikasi</a></li>
+      <li><a href="#publikasi" class="nav-link py-2">Publikasi</a></li>
+      <li><a href="#faq" class="nav-link py-2">FAQ</a></li>
+    </ul>
+    <a href="#unduh" class="hidden md:inline-flex items-center gap-2 bg-primary hover:bg-accent transition-all text-white text-sm font-semibold px-4 py-2 rounded-lg">
+      Unduh Aplikasi
+    </a>
+    <button id="menuBtn" aria-label="Buka menu" aria-expanded="false" class="md:hidden text-ink focus:outline-none">
+      <svg id="iconMenu" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <svg id="iconClose" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="hidden"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div id="mobileMenu" class="hidden md:hidden border-t border-white/5 bg-bg/95 backdrop-blur-xl px-5 pb-6 pt-2">
+    <ul class="flex flex-col gap-1 text-sm font-medium text-muted">
+      <li><a href="#tentang" class="mobile-link block py-2.5">Tentang</a></li>
+      <li><a href="#fitur" class="mobile-link block py-2.5">Fitur</a></li>
+      <li><a href="#galeri" class="mobile-link block py-2.5">Galeri</a></li>
+      <li><a href="#demo" class="mobile-link block py-2.5">Demo Video</a></li>
+      <li><a href="#spesifikasi" class="mobile-link block py-2.5">Spesifikasi</a></li>
+      <li><a href="#publikasi" class="mobile-link block py-2.5">Publikasi</a></li>
+      <li><a href="#faq" class="mobile-link block py-2.5">FAQ</a></li>
+      <li class="pt-2"><a href="#unduh" class="mobile-link block text-center bg-primary text-white font-semibold py-2.5 rounded-lg">Unduh Aplikasi</a></li>
+    </ul>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="hero" class="relative pt-32 pb-24 md:pt-40 md:pb-28 overflow-hidden blueprint-bg flex items-center min-h-[90vh]">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 relative z-10 w-full">
+    <div class="grid md:grid-cols-2 gap-12 items-center">
+      <div class="space-y-6">
+        <div class="hero-in hero-in-1 inline-flex items-center gap-2 bg-accent/10 border border-accent/20 px-3 py-1.5 rounded-full font-mono text-[11px] text-accent tracking-wider uppercase">
+          <span class="w-2 h-2 rounded-full bg-accent animate-ping"></span>
+          Media Informasi Wayfinding Spasial
+        </div>
+        <h1 class="hero-in hero-in-2 font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tight">
+          Eksplorasi Gedung 1<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent via-purple-400 to-primary">Secara Interaktif 3D</span>
+        </h1>
+        <p class="hero-in hero-in-3 text-muted text-base md:text-lg leading-relaxed max-w-lg">
+          Atasi masalah disorientasi ruang (wayfinding) melalui simulasi penjelajahan dunia virtual yang dibangun akurat dari koordinat arsitektur asli. Temukan ruangan kelas, laboratorium, dan ruang administrasi secara praktis.
+        </p>
+        <div class="hero-in hero-in-4 flex flex-wrap gap-4 pt-2">
+          <a href="#unduh" class="inline-flex items-center gap-2 bg-primary hover:bg-accent transition-all text-white font-semibold px-6 py-4 rounded-xl">
+            Unduh Aplikasi
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v12m0 0l5-5m-5 5l-5-5M5 20h14"/></svg>
+          </a>
+          <a href="#demo" class="inline-flex items-center gap-2 border border-white/10 bg-white/5 hover:bg-white/10 transition-all font-semibold px-6 py-4 rounded-xl">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="text-accent"><path d="M8 5v14l11-7z"/></svg>
+            Tonton Demo Video
+          </a>
+        </div>
+        <div class="hero-in hero-in-5 flex items-center gap-4 mt-8 font-mono text-[11px] text-muted/80">
+          <span class="bg-surface px-2 py-1 rounded border border-white/5">WINDOWS 64-BIT</span>
+          <span class="bg-surface px-2 py-1 rounded border border-white/5">OFFLINE RUNNING</span>
+          <span class="bg-surface px-2 py-1 rounded border border-white/5">STANDALONE APP</span>
+        </div>
+      </div>
+
+      <!-- Hero visual: Gedung 1 -->
+      <div class="relative hero-visual hidden md:block" id="heroVisual">
+        <div class="hero-stage relative aspect-square flex items-center justify-center">
+          <div class="hero-ring hero-ring--outer"></div>
+          <div class="hero-ring hero-ring--inner"></div>
+          <img src="assets/tampakdepan.png" alt="Tampak depan Gedung 1" class="w-[85%] max-w-sm mx-auto z-10">
+          <div class="hero-glow"></div>
+          <span class="hero-tag hero-tag--top shadow-lg border border-accent/20">
+            <span class="waypoint-mark waypoint-mark--sm"></span>
+            <span>Gedung 1 Amikom Purwokerto</span>
+          </span>
+          <span class="hero-tag hero-tag--bottom font-mono border border-primary/20">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>UNITY GAME ENGINE</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TENTANG ============ -->
+<section id="tentang" class="py-24 border-t border-white/5 relative overflow-hidden">
+  <div class="reveal max-w-7xl mx-auto px-5 md:px-8">
+    <div class="grid md:grid-cols-2 gap-12 items-center">
+      <div class="space-y-6">
+        <p class="section-label">Tentang Aplikasi</p>
+        <h2 class="font-display font-bold text-3xl md:text-4xl leading-tight">Solusi Alternatif Media Informasi Spasial Digital</h2>
+        <p class="text-muted leading-relaxed">
+          Keterbatasan papan pengumuman konvensional cetak memicu timbulnya kendala orientasi arah bagi civitas akademika baru. Aplikasi Virtual Tour Gedung 1 ini dibangun guna menyediakan sarana pengenalan lingkungan kampus yang mandiri, adaptif, serta informatif.
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="benefit-card">
+          <div class="text-accent font-mono font-bold mb-2">01</div>
+          <h3 class="font-display font-bold mb-1 text-ink">Eksplorasi Mandiri</h3>
+          <p class="text-xs text-muted">Mendukung orientasi ruang secara fleksibel tanpa perlu didampingi petugas.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="text-accent font-mono font-bold mb-2">02</div>
+          <h3 class="font-display font-bold mb-1 text-ink">Akurasi Spasial</h3>
+          <p class="text-xs text-muted">Letak ruangan dan bentuk koridor merepresentasikan kondisi asli gedung.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="text-accent font-mono font-bold mb-2">03</div>
+          <h3 class="font-display font-bold mb-1 text-ink">Running Offline</h3>
+          <p class="text-xs text-muted">Dapat dioperasikan penuh tanpa membutuhkan jaringan internet.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="text-accent font-mono font-bold mb-2">04</div>
+          <h3 class="font-display font-bold mb-1 text-ink">Akses Publik</h3>
+          <p class="text-xs text-muted">Disediakan secara gratis untuk membantu mahasiswa baru dan pengunjung.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FITUR ============ -->
+<section id="fitur" class="py-24 border-t border-white/5 bg-surface2 blueprint-bg">
+  <div class="reveal max-w-7xl mx-auto px-5 md:px-8">
+    <p class="section-label">Fitur Utama Aplikasi</p>
+    <h2 class="font-display font-bold text-3xl md:text-4xl mb-12">Integrasi Sistem Mekanik untuk Kemudahan Wayfinding</h2>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/><path d="M5 21v-2a7 7 0 0114 0v2"/></svg></div>
+        <h3 class="font-display font-bold text-lg mb-2 text-ink">First-Person Free Roaming</h3>
+        <p class="text-muted text-sm mb-4">Mekanisme penjelajahan bebas dengan sudut pandang orang pertama menggunakan skema kontrol pergerakan karakter desktop standar.</p>
+        <div class="flex gap-2 font-mono text-[11px]"><span class="key-chip">W, A, S, D</span><span>Berjalan</span><span class="key-chip ml-2">Mouse</span><span>Kamera</span></div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 22l-4-8h8l-4 8z"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <h3 class="font-display font-bold text-lg mb-2 text-ink">Dynamic Waypoint Navigation</h3>
+        <p class="text-muted text-sm mb-4">Sistem pemandu rute berbasis titik jalur (Waypoint). Memunculkan petunjuk arah berupa panah dinamis (Arrow Indicator) di lantai.</p>
+        <span class="tag-pill">Panah Penunjuk Arah Otomatis</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 20V9"/></svg></div>
+        <h3 class="font-display font-bold text-lg mb-2 text-ink">Proximity Label Trigger</h3>
+        <p class="text-muted text-sm mb-4">Pemanfaatan komponen *trigger collider* di area pintu. Papan nama virtual 3D otomatis muncul melayang saat didekati.</p>
+        <span class="tag-pill">Deteksi Jarak Otomatis</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.9 2.9M16.9 16.9l2.9 2.9M1 12h4M19 12h4M4.2 19.8l2.9-2.9M16.9 7.1l2.9-2.9"/></svg></div>
+        <h3 class="font-display font-bold text-lg mb-2 text-ink">Settings Toggle (Pause Menu)</h3>
+        <p class="text-muted text-sm mb-4">Dapat diakses sewaktu-waktu lewat tombol ESC. Menyediakan opsi pengatur sensitivitas mouse, volume audio, serta grafik.</p>
+        <span class="tag-pill">Rendah · Sedang · Tinggi</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GALERI ============ -->
+<section id="galeri" class="py-24 border-t border-white/5">
+  <div class="reveal max-w-7xl mx-auto px-5 md:px-8">
+    <p class="section-label">Galeri Aplikasi</p>
+    <h2 class="font-display font-bold text-3xl mb-12">Tangkapan Layar Sistem</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+      <div class="gallery-item aspect-[4/3]"><div class="gallery-fallback"><img src="assets/depan.png"></div></div>
+      <div class="gallery-item aspect-[4/3]"><div class="gallery-fallback"><img src="assets/Lobby.png"></div></div>
+      <div class="gallery-item aspect-[4/3]"><div class="gallery-fallback"><img src="assets/menuutama.png"></div></div>
+      <div class="gallery-item aspect-[4/3]"><div class="gallery-fallback"><img src="assets/depanlagi.png"></div></div>
+      <div class="gallery-item aspect-[4/3]"><div class="gallery-fallback"><img src="assets/samping.png"></div></div>
+      <div class="gallery-item aspect-[4/3]"><div class="gallery-fallback"><img src="assets/pausemenu.png"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIDEO DEMO ============ -->
+<section id="demo" class="py-24 border-t border-white/5 bg-surface2">
+  <div class="reveal max-w-5xl mx-auto px-5 md:px-8 text-center">
+    <p class="section-label justify-center">Video Demonstrasi</p>
+    <h2 class="font-display font-bold text-3xl mb-12">Uji Coba Alur Mekanik Sistem</h2>
+    <div class="relative rounded-2xl overflow-hidden border border-purple-500/20 aspect-video bg-black flex flex-col items-center justify-center gap-4 text-muted font-mono p-6">
+      <div class="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 text-accent flex items-center justify-center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="translate-x-0.5"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <span class="text-xs uppercase tracking-wider">Iframe Embed Video Demonstrasi</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPESIFIKASI ============ -->
+<section id="spesifikasi" class="py-24 border-t border-white/5">
+  <div class="reveal max-w-7xl mx-auto px-5 md:px-8">
+    <div class="grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <p class="section-label">Kebutuhan Perangkat</p>
+        <h2 class="font-display font-bold text-3xl mb-6">Spesifikasi Sistem Komputer</h2>
+        <p class="text-muted leading-relaxed">Aplikasi bersifat portable dan dijalankan secara mandiri tanpa proses instalasi berbelit.</p>
+      </div>
+      <div class="spec-table shadow-xl border border-white/5">
+        <div class="spec-row"><span class="text-muted">Sistem Operasi</span><span class="font-mono text-sm text-accent">Windows 10 / 11 (64-bit)</span></div>
+        <div class="spec-row"><span class="text-muted">Resolusi Layar</span><span class="font-mono text-sm">1280 × 720 Minimum</span></div>
+        <div class="spec-row"><span class="text-muted">Ruang Penyimpanan</span><span class="font-mono text-sm">± 1 GB Ruang Kosong</span></div>
+        <div class="spec-row"><span class="text-muted">Koneksi Jaringan</span><span class="font-mono text-sm text-emerald-400">100% Offline Running</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UNDUH ============ -->
+<section id="unduh" class="py-24 border-t border-white/5 blueprint-bg">
+  <div class="reveal max-w-4xl mx-auto px-5 md:px-8 text-center">
+    <p class="section-label justify-center">Halaman Unduhan Aplikasi</p>
+    <h2 class="font-display font-bold text-3xl mb-4">Unduh Paket Aplikasi Mentah</h2>
+    <p class="text-muted mb-8">Unduh paket data kompilasi akhir aplikasi berekstensi versi terbaru.</p>
+    <div class="download-card border border-purple-500/20 bg-surface/60 backdrop-blur-md p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div class="text-left">
+        <p class="font-display font-bold text-lg">Virtual Tour Gedung 1 (Build Akhir)</p>
+        <p class="font-mono text-xs text-accent mt-1">Versi 1.0.0 · Standalone Windows (.exe)</p>
+      </div>
+      <a href="https://drive.google.com/drive/folders/1Ce1MmdyTudv0JTaELxC0NLW4rNHYawn1?usp=drive_link" target="_blank" rel="noopener" class="bg-primary hover:bg-accent text-white font-semibold px-6 py-4 rounded-xl transition-all">
+        Unduh via Google Drive
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PUBLIKASI ============ -->
+<section id="publikasi" class="py-24 border-t border-white/5 bg-surface2">
+  <div class="reveal max-w-7xl mx-auto px-5 md:px-8">
+    <p class="section-label">Halaman Publikasi</p>
+    <h2 class="font-display font-bold text-3xl mb-12">Ringkasan Publikasi Penelitian</h2>
+    <div class="grid md:grid-cols-3 gap-10 items-start">
+      <div class="md:col-span-2 space-y-4">
+        <h3 class="font-display font-bold text-xl">Abstrak & Metodologi Luaran</h3>
+        <p class="text-muted text-sm leading-relaxed">
+          Riset tugas akhir ini menerapkan metodologi MDLC (Multimedia Development Life Cycle) untuk menyelesaikan kendala penjelajahan tata letak ruang (Wayfinding). Pengujian Usability lewat SUS meraih skor 77,75 (Kategori Good).
+        </p>
+      </div>
+      <div class="bg-surface/40 border border-white/5 p-6 rounded-2xl font-mono text-xs space-y-3">
+        <h3 class="font-display font-bold text-sm text-ink uppercase tracking-wider pb-2 border-b border-white/5">Metadata Akademik</h3>
+        <div class="dev-row"><span class="text-muted">Nama Peneliti</span><span class="text-ink font-bold">Safandi Mukti</span></div>
+        <div class="dev-row"><span class="text-muted">Program Studi</span><span class="text-ink">Informatika (S1)</span></div>
+        <div class="dev-row"><span class="text-muted">Dosen Pembimbing</span><span class="text-ink">Dr. Berlilana, M.Kom., M.Si.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" class="py-24 border-t border-white/5">
+  <div class="reveal max-w-3xl mx-auto px-5 md:px-8">
+    <p class="section-label justify-center">FAQ</p>
+    <h2 class="font-display font-bold text-3xl mb-12 text-center">Pertanyaan yang Sering Diajukan</h2>
+
+    <div class="space-y-4" id="faqAccordionGroup">
+      
+      <!-- ITEM 1 -->
+      <div class="faq-item">
+        <button class="faq-question focus:outline-none">
+          <span class="faq-q-num">Q1</span>
+          <span class="faq-q-text">Apakah paket aplikasi ini dipungut biaya?</span>
+          <span class="faq-icon"><span></span><span></span></span>
+        </button>
+        <div class="faq-answer-wrap">
+          <div class="faq-answer"><p>Tidak, aplikasi virtual tour ini dipublikasikan secara gratis untuk keperluan orientasi mandiri mahasiswa baru, calon mahasiswa, serta seluruh pengunjung lingkungan Universitas Amikom Purwokerto.</p></div>
+        </div>
+      </div>
+
+      <!-- ITEM 2 -->
+      <div class="faq-item">
+        <button class="faq-question focus:outline-none">
+          <span class="faq-q-num">Q2</span>
+          <span class="faq-q-text">Apakah program memerlukan paket data internet aktif?</span>
+          <span class="faq-icon"><span></span><span></span></span>
+        </button>
+        <div class="faq-answer-wrap">
+          <div class="faq-answer"><p>Sama sekali tidak. Setelah folder arsip berhasil Anda unduh dan ekstrak ke komputer, seluruh fungsi navigasi panah dan roaming 3D dapat berjalan 100% offline tanpa kuota internet.</p></div>
+        </div>
+      </div>
+
+      <!-- ITEM 3 -->
+      <div class="faq-item">
+        <button class="faq-question focus:outline-none">
+          <span class="faq-q-num">Q3</span>
+          <span class="faq-q-text">Bagaimana solusi jika visualisasi dunia virtual terasa berat atau patah-patah?</span>
+          <span class="faq-icon"><span></span><span></span></span>
+        </button>
+        <div class="faq-answer-wrap">
+          <div class="faq-answer"><p>Anda bisa menekan tombol ESC di keyboard kapan saja untuk memicu panel pause menu. Pada bagian dropdown kualitas grafis, ubah opsi dari Tinggi menjadi Sedang atau Rendah guna menyesuaikan spesifikasi kartu grafis perangkat Anda.</p></div>
+        </div>
+      </div>
+
+      <!-- ITEM 4 -->
+      <div class="faq-item">
+        <button class="faq-question focus:outline-none">
+          <span class="faq-q-num">Q4</span>
+          <span class="faq-q-text">Bagaimana teknis mekanik pencarian rute kelas di aplikasi?</span>
+          <span class="faq-icon"><span></span><span></span></span>
+        </button>
+        <div class="faq-answer-wrap">
+          <div class="faq-answer"><p>Buka panel antarmuka menu navigasi, pilih salah satu nama ruangan target, lalu ikuti petunjuk panah ungu bercahaya (*arrow indicator*) yang muncul otomatis menyusuri permukaan lantai koridor sampai depan pintu tujuan.</p></div>
+        </div>
+      </div>
+
+      <!-- ITEM 5 -->
+      <div class="faq-item">
+        <button class="faq-question focus:outline-none">
+          <span class="faq-q-num">Q5</span>
+          <span class="faq-q-text">Apakah produk virtual tour ini bisa dijalankan di Android atau macOS?</span>
+          <span class="faq-icon"><span></span><span></span></span>
+        </button>
+        <div class="faq-answer-wrap">
+          <div class="faq-answer"><p>Untuk kompilasi build rilisan versi saat ini, aplikasi dikemas khusus berupa file eksekusi (*standalone architecture*) untuk sistem operasi komputer Windows tipe arsitektur 64-bit.</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ KONTAK ============ -->
+<section id="kontak" class="py-24 border-t border-white/5 bg-surface2 blueprint-bg">
+  <div class="reveal max-w-2xl mx-auto px-5 md:px-8 text-center">
+    <p class="section-label justify-center">Informasi Kontak</p>
+    <h2 class="font-display font-bold text-3xl mb-12">Umpan Balik & Layanan Komunikasi</h2>
+    <div class="grid sm:grid-cols-2 gap-5">
+      <a href="https://wa.me/6289653743737" target="_blank" rel="noopener" class="contact-card contact-card--wa">
+        <span class="contact-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.45 1.27 4.9L2 22l5.25-1.38A9.96 9.96 0 0012.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10zm0 18.15c-1.6 0-3.13-.43-4.46-1.24l-.32-.19-3.11.82.83-3.04-.21-.31A8.15 8.15 0 013.86 12c0-4.5 3.67-8.17 8.18-8.17S20.22 7.5 20.22 12s-3.67 8.15-8.18 8.15zm4.48-6.13c-.24-.12-1.45-.72-1.68-.8-.22-.08-.39-.12-.55.12-.16.24-.63.8-.78.96-.14.16-.28.18-.53.06-.24-.12-1.03-.38-1.96-1.21-.72-.65-1.21-1.44-1.35-1.68-.14-.24-.02-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.42-.55-.42h-.47c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64.58.25 1.03.4 1.38.51.58.18 1.1.16 1.52.1.46-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28z"/></svg></span>
+        <span class="text-left"><span class="block font-display font-bold text-ink">Saluran WhatsApp</span><span class="block text-xs text-muted mt-0.5">Komunikasi Respons Cepat</span></span>
+      </a>
+      <a href="https://instagram.com/topandim" target="_blank" rel="noopener" class="contact-card contact-card--ig">
+        <span class="contact-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+        <span class="text-left"><span class="block font-display font-bold text-ink">Instagram Resmi</span><span class="block text-xs text-muted mt-0.5">Galeri Update Riset</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- LOGIKA JAVASCRIPT TERTANAM (MENGGANTIKAN SCRIPT.JS LAMA) -->
+<script>
+  // Menu Mobile Toggle
+  const menuBtn = document.getElementById('menuBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const iconMenu = document.getElementById('iconMenu');
+  const iconClose = document.getElementById('iconClose');
+
+  menuBtn?.addEventListener('click', () => {
+    const isOpen = !mobileMenu.classList.contains('hidden');
+    mobileMenu.classList.toggle('hidden');
+    iconMenu.classList.toggle('hidden');
+    iconClose.classList.toggle('hidden');
+  });
+
+  // KONTROL AKORDION FAQ FIX (MENCEGAH TEXT TERBUKA DI AWAL)
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const btn = item.querySelector('.faq-question');
+    btn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isOpen = item.classList.contains('open');
+      
+      // Tutup semua faq-item lainnya
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      
+      // Jika sebelumnya tertutup, sekarang buka
+      if (!isOpen) {
+        item.classList.add('open');
+      }
+    });
+  });
+
+  // Scroll Reveal & Active Links
+  const revealEls = document.querySelectorAll('.reveal');
+  const navLinks = document.querySelectorAll('.nav-link');
+  const sections = document.querySelectorAll('section[id]');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  revealEls.forEach(el => observer.observe(el));
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= (s.offsetTop - 120)) current = s.getAttribute('id');
+    });
+    navLinks.forEach(l => {
+      l.classList.toggle('active', l.getAttribute('href') === `#${current}`);
+    });
+    
+    const navbar = document.getElementById('navbar');
+    if (window.scrollY > 20) navbar?.classList.add('bg-bg/95', 'shadow-xl');
+    else navbar?.classList.remove('bg-bg/95', 'shadow-xl');
+  });
+</script>
+</body>
+</html>
